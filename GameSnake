@@ -1,0 +1,186 @@
+from math import trunc
+
+WHITE = (255,255,255)
+PINK = (230,50,230)
+GREEN = (0,200,64)
+BLACK = (0,0,0)
+
+window_size = 1000
+block = 40
+r_size = int(block*0.8)
+N = trunc(window_size/block)+1
+run = True
+
+import pygame , random
+
+pygame.init()
+win = pygame.display.set_mode((window_size,window_size))
+pygame.display.set_caption("WARM")
+
+win.fill(WHITE)
+
+for i in range (N) :
+	pygame.draw.line(win,BLACK,[i*block,0],[i*block,window_size],1)
+	pygame.draw.line(win,BLACK,[0,i*block],[window_size,i*block],1)
+
+class Apple () :
+
+	X = 0
+	Y = 0
+
+	def __init__(self,w):
+		while True :
+			self.X = int(random.randint(2,N-1)*block-block/2)
+			self.Y = int(random.randint(2,N-1)*block-block/2)
+			if not ( [self.X//block,self.Y//block] in w.positions ) :
+				break
+	def born_after_die(self,w):
+		while True :
+			self.X = int(random.randint(2,N-1)*block-block/2)
+			self.Y = int(random.randint(2,N-1)*block-block/2)
+			if not ( [self.X//block,self.Y//block] in w.positions ) :
+				break
+	def draw_apple(self):
+		pygame.draw.circle(win,GREEN,(self.X,self.Y),int(r_size/2))
+	def clear (self) :
+		pygame.draw.circle(win,WHITE,(self.X,self.Y),int(r_size/2))
+	def get_xy (self):
+		return (self.X,self.Y)
+
+class Warm () :
+
+	draw = []
+	positions = []
+	Way = 'DOWN'
+
+	def __init__(self) :
+		x=block*1.1
+		y=block*2.1
+		pygame.draw.rect(win,PINK,(x,y,r_size,r_size))
+		pygame.draw.rect(win,PINK,(x,y-block,r_size,r_size))
+		self.draw.append([x,y])
+		self.positions.append ([x//block,y//block])
+		self.draw.append([x,y-block])
+		self.positions.append([x//block,(y-block)//block])
+
+	def Add_Part (self) :
+
+		if self.draw[-1][0] == self.draw[-2][0] :
+			NewX=self.draw[-1][0]
+			if self.draw[-2][1] < self.draw[-1][1] :
+				NewY=self.draw[-1][1]+block
+			else :
+				NewY=self.draw[-1][1]-block
+		else :
+			NewY=self.draw[-1][1]
+			if self.draw[-2][0] < self.draw[-1][0] :
+				NewX=self.draw[-1][0]+block
+			else :
+				NewX=self.draw[-1][0]-block
+		self.draw.append([NewX,NewY])
+		self.positions.append([NewX//block,NewY//block])
+
+	def YEAH_APPLE_WOW_COOL (self,apl) :
+
+		apl_x , apl_y = apl.get_xy()
+		X = self.draw[0][0]
+		Y = self.draw[0][1]
+		SURE = False
+		if apl_x//block == X//block and  apl_y//block == Y//block :
+			SURE = True
+		return SURE
+
+	def Maybe_change_Way (self,keys) :
+
+		if keys[pygame.K_LEFT] and self.Way != 'RIGHT' :
+			self.Way = 'LEFT'
+		if keys[pygame.K_RIGHT] and self.Way != 'LEFT' :
+			self.Way = 'RIGHT'
+		if keys[pygame.K_UP] and self.Way != 'DOWN' :
+			self.Way = 'UP'
+		if keys[pygame.K_DOWN] and self.Way != 'UP' :
+			self.Way = 'DOWN'
+
+	def Draw_Running_Warm_ (self) :
+
+		pygame.draw.rect(win,WHITE,(self.draw[-1][0],self.draw[-1][1],r_size,r_size))
+		self.draw.remove(self.draw[-1])
+		self.positions.remove(self.positions[-1])
+
+		New_Draw_x = 0
+		New_Draw_y = 0
+
+		if self.Way == 'LEFT' :
+			New_Draw_x = self.draw[0][0]-block
+			New_Draw_y = self.draw[0][1]
+		elif self.Way == 'RIGHT' :
+			New_Draw_x = self.draw[0][0]+block
+			New_Draw_y = self.draw[0][1]
+		elif self.Way == 'UP' :
+			New_Draw_y = self.draw[0][1]-block
+			New_Draw_x = self.draw[0][0]
+		else :
+			New_Draw_y = self.draw[0][1]+block
+			New_Draw_x = self.draw[0][0]
+
+		if New_Draw_x < block :
+			New_Draw_x = window_size-block*1.9
+		if New_Draw_x > window_size-block :
+			New_Draw_x = block*1.1
+
+		if New_Draw_y < block :
+			New_Draw_y = window_size-block*1.9
+		if New_Draw_y > window_size-block :
+			New_Draw_y = block*1.1
+
+		self.draw.insert(0,[New_Draw_x,New_Draw_y])
+		self.positions.insert(0,[New_Draw_x//block,New_Draw_y//block])
+		pygame.draw.rect(win,PINK,(New_Draw_x,New_Draw_y,r_size,r_size))
+
+		result = False
+
+		for i in self.positions[1:] :
+			if i[0]==self.positions[0][0] and i[1]==self.positions[0][1] :
+				result = True
+			else :
+				continue
+
+		return result
+
+NEW_WARM = Warm()
+NEW_APPLE = Apple(NEW_WARM)
+NEW_APPLE.draw_apple()
+pygame.display.update()
+
+
+
+while run :
+
+	pygame.time.delay(120)
+
+	for event in pygame.event.get() :
+		if event.type == pygame.QUIT :
+			run = False
+
+	keys = pygame.key.get_pressed()
+	NEW_WARM.Maybe_change_Way(keys)
+
+	if NEW_WARM.YEAH_APPLE_WOW_COOL(NEW_APPLE) :
+		for i in range (5) :
+			NEW_WARM.Add_Part()
+		NEW_APPLE.clear()
+		NEW_APPLE.born_after_die(NEW_WARM)
+		NEW_APPLE.draw_apple()
+
+	X = NEW_WARM.Draw_Running_Warm_()
+
+	pygame.display.update()
+
+	if X :
+		win.fill(BLACK)
+		pygame.display.update()
+		run = False
+
+
+
+pygame.quit()
